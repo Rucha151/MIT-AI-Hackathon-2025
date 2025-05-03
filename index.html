@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Personal CRM Assistant</title>
+  <style>
+    body { font-family: sans-serif; margin: 40px; }
+    input, button, textarea { margin: 10px 0; display: block; }
+    .contact { margin-top: 20px; border: 1px solid #ccc; padding: 10px; }
+  </style>
+</head>
+<body>
+
+  <h1>Personal CRM Assistant</h1>
+
+  <h2>Upload Contact Image (OCR)</h2>
+  <form id="uploadForm">
+    <input type="file" id="fileInput" required />
+    <button type="submit">Upload</button>
+  </form>
+  <pre id="uploadResult"></pre>
+
+  <h2>Search Contacts</h2>
+  <input type="text" id="searchQuery" placeholder="Enter name or company..." />
+  <button onclick="searchContacts()">Search</button>
+  <div id="searchResults"></div>
+
+  <h2>Send LinkedIn Connection</h2>
+  <input type="text" id="linkedinUrl" placeholder="LinkedIn profile URL" />
+  <textarea id="linkedinMessage" placeholder="Custom message..."></textarea>
+  <button onclick="sendLinkedIn()">Send Connection</button>
+  <pre id="linkedinResult"></pre>
+
+  <script>
+    document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const fileInput = document.getElementById('fileInput');
+      const formData = new FormData();
+      formData.append('file', fileInput.files[0]);
+
+      const res = await fetch('http://localhost:5050/upload', {
+        method: 'POST',
+        body: formData
+      });
+      const data = await res.json();
+      document.getElementById('uploadResult').textContent = JSON.stringify(data, null, 2);
+    });
+
+    async function searchContacts() {
+      const q = document.getElementById('searchQuery').value;
+      const res = await fetch(`http://localhost:5050/search?q=${encodeURIComponent(q)}`);
+      const data = await res.json();
+
+      const container = document.getElementById('searchResults');
+      container.innerHTML = '';
+      data.forEach(contact => {
+        const div = document.createElement('div');
+        div.className = 'contact';
+        div.innerHTML = `
+          <strong>Name:</strong> ${contact[1]}<br>
+          <strong>Email:</strong> ${contact[2]}<br>
+          <strong>Phone:</strong> ${contact[3]}<br>
+          <strong>Company:</strong> ${contact[4]}<br>
+          <strong>LinkedIn:</strong> ${contact[6]}
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    async function sendLinkedIn() {
+      const linkedin = document.getElementById('linkedinUrl').value;
+      const message = document.getElementById('linkedinMessage').value;
+
+      const res = await fetch('/linkedin/connect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ linkedin, message })
+      });
+
+      const data = await res.json();
+      document.getElementById('linkedinResult').textContent = JSON.stringify(data, null, 2);
+    }
+  </script>
+
+</body>
+</html>
+
